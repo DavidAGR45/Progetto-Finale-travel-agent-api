@@ -39,7 +39,7 @@ def chain_historical_expert(input_text: str) -> str:
         "system_prompt": system_prompt
     })
 
-    content_len = len(getattr(result, "content", str(result)))
-    print(f"[TRACE][Tool: chain_historical_expert] Risposta generata ({content_len} caratteri)")
+    content = getattr(result, "content", str(result))
+    print(f"[TRACE][Tool: chain_historical_expert] Risposta generata ({len(content)} caratteri)")
     print("*" * 80)
-    return result
+    return content

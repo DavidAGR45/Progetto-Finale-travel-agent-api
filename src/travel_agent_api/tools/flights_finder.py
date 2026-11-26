@@ -63,6 +63,10 @@ def flights_finder(params: FlightsInput):
         }
         search = GoogleSearch(search_params)
         results = search.get_dict()
+        if "best_flights" in results and isinstance(results["best_flights"], list):
+            results["best_flights"] = results["best_flights"][:5]
+        if "other_flights" in results and isinstance(results["other_flights"], list):
+            results["other_flights"] = results["other_flights"][:5]
         best_count = len(results.get("best_flights", []))
         other_count = len(results.get("other_flights", []))
         print(f"[TRACE][Tool: flights_finder] Trovati {best_count} best_flights e {other_count} other_flights")

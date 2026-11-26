@@ -67,10 +67,19 @@ def chain_travel_plan(params: TravelPlanInput) -> TravelPlanOutput:
         Always strive to be approachable and helpful, offering the 
         most accurate and useful information possible to users.
     """
-    prompt = ChatPromptTemplate([("human", "{input}")])
     output_parser = PydanticOutputParser(pydantic_object=TravelPlanOutput)
+    prompt = ChatPromptTemplate.from_messages([
+        (
+            "system",
+            "You are a travel expert. Respond ONLY with a valid JSON object matching the schema below, without any extra text.\n{format_instructions}",
+        ),
+        ("human", "{input}"),
+    ])
     chain = prompt | model | output_parser
-    result = chain.invoke(input=system_prompt)
+    result = chain.invoke({
+        "input": system_prompt,
+        "format_instructions": output_parser.get_format_instructions(),
+    })
 
     print(f"[TRACE][Tool: chain_travel_plan] Itinerario generato con {len(result.travel_plan)} giorni")
     print("*" * 80)

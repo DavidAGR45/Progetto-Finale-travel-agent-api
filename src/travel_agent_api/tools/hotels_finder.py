@@ -74,8 +74,13 @@ def hotels_finder(params: HotelsInput):
     }
     try:
         search = GoogleSearch(search_params)
-        results = search.get_dict()["properties"]
-        print(f"[TRACE][Tool: hotels_finder] Estratti {len(results)} hotel")
+        data = search.get_dict()
+        if "error" in data:
+            print(f"[TRACE][Tool: hotels_finder][ERRORE API] {data['error']}")
+            results = data["error"]
+        else:
+            results = data.get("properties", [])[:5]
+            print(f"[TRACE][Tool: hotels_finder] Estratti {len(results)} hotel")
     except Exception as e:
         print(f"[TRACE][Tool: hotels_finder][ERRORE] {e}")
         results = str(e)

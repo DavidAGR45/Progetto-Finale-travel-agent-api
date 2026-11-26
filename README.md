@@ -174,7 +174,7 @@ Lo sviluppo dell'API ha seguito passo dopo passo i 6 capitoli della documentazio
 
 ### Entrypoint e Routing
 - **`src/travel_agent_api/main.py`**: Inizializza FastAPI, imposta il middleware CORS per abilitare le origini `http://127.0.0.1:8000` e `http://localhost:8000`, e registra il router `chat_router` con prefisso `/chat`.
-- **`src/travel_agent_api/routes/chat_router.py`**: Definisce il modello Pydantic `ChatComplentionRequest` e l'endpoint `POST /chat/travel-agent` che riceve la cronologia dei messaggi, avvia l'elaborazione dell'agente e ne restituisce l'output.
+- **`src/travel_agent_api/routes/chat_router.py`**: Definisce il modello Pydantic `ChatCompletionRequest` (con alias `ChatComplentionRequest`) e l'endpoint `POST /chat/travel-agent` che riceve la cronologia dei messaggi, avvia l'elaborazione dell'agente e ne restituisce l'output.
 - **`src/travel_agent_api/routes/__init__.py`**: Dichiara la directory come package Python.
 
 ### Servizio Core dell'Agente
@@ -183,10 +183,10 @@ Lo sviluppo dell'API ha seguito passo dopo passo i 6 capitoli della documentazio
 - **`src/travel_agent_api/services/__init__.py`**: Dichiara la directory come package Python.
 
 ### Strumenti (Tools)
-- **`src/travel_agent_api/tools/flights_finder.py`**: Valida gli input (aeroporti di partenza/arrivo IATA, date andata/ritorno, passeggeri) e interroga l'engine `google_flights` di SerpApi restituendo i voli trovati.
-- **`src/travel_agent_api/tools/hotels_finder.py`**: Valida i parametri di ricerca alloggio (località, date check-in/check-out, ospiti, stelle) e interroga l'engine `google_hotels` di SerpApi restituendo le strutture ricettive.
-- **`src/travel_agent_api/tools/chain_travel_plan.py`**: Catena LangChain che elabora i vincoli di viaggio (date, stile, budget, cibo) e restituisce un output strutturato con attività mattina, pomeriggio e sera tramite `PydanticOutputParser`.
-- **`src/travel_agent_api/tools/chain_historical_expert.py`**: Catena LangChain per generare contenuti e curiosità storiche sulla destinazione selezionata.
+- **`src/travel_agent_api/tools/flights_finder.py`**: Valida gli input (aeroporti di partenza/arrivo IATA, date andata/ritorno, passeggeri), interroga l'engine `google_flights` di SerpApi e limita i risultati (`best_flights` e `other_flights` a max 5 ciascuno) per mantenere leggero il contesto dell'agente.
+- **`src/travel_agent_api/tools/hotels_finder.py`**: Valida i parametri di ricerca alloggio (località, date check-in/check-out, ospiti, stelle), interroga l'engine `google_hotels` di SerpApi gestendo eventuali errori API e limita i risultati ai primi 5 hotel.
+- **`src/travel_agent_api/tools/chain_travel_plan.py`**: Catena LangChain che elabora i vincoli di viaggio (date, stile, budget, cibo) e include `output_parser.get_format_instructions()` nel prompt per restituire un JSON valido e strutturato con attività mattina, pomeriggio e sera tramite `PydanticOutputParser`.
+- **`src/travel_agent_api/tools/chain_historical_expert.py`**: Catena LangChain per generare contenuti e curiosità storiche sulla destinazione selezionata, restituendo direttamente il testo (`str`) della risposta.
 - **`src/travel_agent_api/tools/__init__.py`**: Dichiara la directory come package Python.
 
 
@@ -200,6 +200,8 @@ Oltre all'implementazione base prevista dalla documentazione, il progetto è sta
 - **Centralizzazione LLM (`services/llm_factory.py`)**: La logica di scelta e inizializzazione del modello linguistico (precedentemente replicata in `agent_service.py`, `chain_travel_plan.py` e `chain_historical_expert.py`) è stata estratta nella funzione riutilizzabile `get_llm()`.
 - **Gestione Errori HTTP (`routes/chat_router.py`)**: L'endpoint `/chat/travel-agent` intercetta eventuali eccezioni durante l'esecuzione dell'agente e restituisce un'eccezione HTTP `500` strutturata tramite `HTTPException`.
 - **Pulizia Naming e Alias**: Corretti alcuni refusi nei nomi di classi e variabili (`ChatCompletionRequest` con alias retrocompatibile `ChatComplentionRequest`, `conversation_history`), oltre all'aggiornamento degli import su `langchain_core`.
+- **Fix Parsing JSON in `chain_travel_plan.py`**: Aggiunto un prompt `system` con `output_parser.get_format_instructions()` per evitare errori `OutputParserException` quando il modello rispondeva in Markdown anziché in JSON.
+- **Ottimizzazione Payload e Robustezza dei Tool**: Limitati a massimo 5 risultati le liste restituite da `hotels_finder.py` e `flights_finder.py` (riducendo drasticamente i tempi di inferenza in locale), aggiunta la gestione sicura di chiavi mancanti o errori SerpApi in `hotels_finder.py`, e uniformato il ritorno a `str` in `chain_historical_expert.py`.
 
 ### 2. Sistema di Tracing (`print`)
 Sono state inserite istruzioni `print` strutturate con prefisso `[TRACE]` in ogni livello dell'applicazione per monitorare in tempo reale il flusso di esecuzione nel terminale:
